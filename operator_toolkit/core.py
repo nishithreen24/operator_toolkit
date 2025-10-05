@@ -1,5 +1,6 @@
 import numpy as np
-
+import scipy as sp
+np.set_printoptions(precision=3, suppress=True)
 class Kets:
     def __init__(self, data = None, n = None):
         if data is not None:
@@ -200,6 +201,9 @@ class Operators:
             return np.array_equal(self.operator @ Operators.dagger(self).operator, Operators.dagger(self).operator @ self.operator)
         else:
             raise ValueError("Only square matrices can be Normal")
+    def isPositive(self):
+        eigenvalues = np.linalg.eigvalsh(self.operator)
+        return np.all(eigenvalues >= 0)
     def commutator(A, B):
         return (A.operator @ B.operator) - (B.operator @ A.operator) 
     def anticommutator(A, B):
@@ -220,6 +224,39 @@ class Operators:
             out = out * args[i]
         return out
     def trace(self):
-        return(np.trace(self.operator))
-    
-np.set_printoptions(precision=3, suppress=True)
+        return np.round((np.trace(self.operator)), 3)
+    def partial_trace(self, dims, trace_out):
+        if len(dims)!=2:
+            raise ValueError("This function only handles density matrices of 2 subsystems")
+        else:
+            dimA, dimB = dims
+            if(trace_out == 0):#rhoB = partial trace over A of rhoAB
+                rhoB = np.zeros((dimB, dimB))
+                for i in range(dimA):
+                    rhoB += self.operator[i*dimB:(i+1)*dimB, i*dimB:(i+1)*dimB]#takes the sum of dimB by dimB blocks along the diagonal of the composite system density matrix
+                return Operators(rhoB)
+            elif(trace_out == 1):#rhoA = partial trace over B of rhoAB
+                rhoA = np.zeros((dimA, dimA))
+                for i in range(dimA):
+                    for j in range(dimA):
+                        block = self.operator[i*dimB:(i+1)*dimB, j*dimB:(j+1)*dimB]#each element of rhoA is the trace of a dimBxdimB block, as there are dimAxdimA such blocks
+                        rhoA[i, j] = np.trace(block)
+                return Operators(rhoA)
+            else:
+                raise ValueError("Trace_out must be over A(0) or B(1)")
+
+    def von_neumann_entropy(self):
+        if (True):#(self.isHermitian()) and (self.trace()==1) and (self.isPositive):
+            eigs = np.linalg.eigvalsh(self.operator)
+            eigs = eigs[eigs>0]
+            return np.round(np.sum(-1*eigs*np.log2(eigs)), 3)
+        else:
+            raise ValueError("Von Neumann Entropy can only be calculated for Hermitian, Positive-definite matrices with trace 1")
+    def pauli_matrices():
+        I = Operators(data = np.eye(2))
+        sigz = Operators(data = np.array(([1, 0], [0, -1])))
+        sigx = Operators(data = np.array(([0, 1], [1, 0])))
+        sigy = Operators(data = np.array(([0, -1j], [1j, 0])))
+        return I, sigz, sigx, sigy
+    def exp(self):
+        return sp.linalg.expm(self.operator)
