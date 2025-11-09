@@ -129,26 +129,26 @@ class Operators:
     def __init__(self, data = None, m = None, n = None): #A: \mathbb{C}^m \to \mathbb{C}^n
         if data is not None:
             if (m is not None and n is not None):
-                self.operator = np.matrix(np.reshape(data, (n, m)))
+                self.operator = np.asarray(np.reshape(data, (n, m)))
             elif m is not None:
-                self.operator = np.matrix(np.reshape(data, (m, m)))
+                self.operator = np.asarray(np.reshape(data, (m, m)))
             elif n is not None:
-                self.operator = np.matrix(np.reshape(data, (n, n)))
-            elif np.sqrt(data.size)%1==0:
-                self.operator = np.matrix(np.reshape(data, ((int)(np.sqrt(data.size)), (int)(np.sqrt(data.size)))))
+                self.operator = np.asarray(np.reshape(data, (n, n)))
+            elif np.sqrt(np.array(data).size)%1==0:
+                self.operator = np.asarray(np.reshape(data, ((int)(np.sqrt(np.array(data).size)), (int)(np.sqrt(np.array(data).size)))))
             else:
                 raise ValueError("Dimension(s) must be provided")
         else:
             if (m is not None and n is not None):
-                self.operator = np.matrix(np.zeros((n, m)))
+                self.operator = np.asarray(np.zeros((n, m)))
             elif m is not None:
-                self.operator = np.matrix(np.zeros((m, m)))
+                self.operator = np.asarray(np.zeros((m, m)))
             elif n is not None:
-                self.operator = np.matrix(np.zeros((n, n)))
+                self.operator = np.asarray(np.zeros((n, n)))
             else:
                 raise ValueError("Dimension(s) and/or data must be provided")
     def hermitian_conjugate(self):
-        return Operators(data = self.operator.getH(), m = self.operator.shape[0], n = self.operator.shape[1])
+        return Operators(data = self.operator.conj().T, m = self.operator.shape[0], n = self.operator.shape[1])
     adjoint = hermitian_conjugate
     dagger = adjoint
     def __add__(self, other):
@@ -215,7 +215,7 @@ class Operators:
             #vectors = Operators(eigenvectors)
             #print("D =\n", values.operator)
             #print("P =\n", vectors.operator)
-            return (eigenvectors, np.diag(eigenvalues))
+            return (Operators(data = np.diag(eigenvalues)), Operators(data = eigenvectors))
         else:
             raise ValueError("Input must be a Hermitian Matrix")
     def tensor_product(*args):
@@ -231,7 +231,7 @@ class Operators:
         else:
             dimA, dimB = dims
             if(trace_out == 0):#rhoB = partial trace over A of rhoAB
-                rhoB = np.zeros((dimB, dimB))
+                rhoB = np.zeros((dimB, dimB), dtype=complex)
                 for i in range(dimA):
                     rhoB += self.operator[i*dimB:(i+1)*dimB, i*dimB:(i+1)*dimB]#takes the sum of dimB by dimB blocks along the diagonal of the composite system density matrix
                 return Operators(rhoB)
@@ -259,4 +259,22 @@ class Operators:
         sigy = Operators(data = np.array(([0, -1j], [1j, 0])))
         return I, sigz, sigx, sigy
     def exp(self):
-        return sp.linalg.expm(self.operator)
+        return Operators(sp.linalg.expm(self.operator))
+    
+    class DensityMatrix:
+        def __init__(self, data):
+            if isinstance(data, Operators):
+                self.rho = data
+            elif isinstance(data, Kets):
+                self.rho = data @ Bras(data)
+            else:
+                print("Incorrect data")
+        def purity(self):
+            rho_squared = self.rho @ self.rho
+            return rho_squared.trace()
+        def entropy(self):
+            eigenvalues, eigenvectors = self.rho.spectral_decomposition()
+            eigenvalues = eigenvalues[eigenvalues > 1e-10]
+            logrho_eigvals = np.log2(eigenvalues)
+            logrho = eigenvectors @ logrho_eigvals @ eigenvectors.dagger()
+            return (-1 * (self.rho @ logrho).trace())

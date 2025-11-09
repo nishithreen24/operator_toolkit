@@ -69,11 +69,11 @@ for i in range(len(t)):
 #print(S)
 
 plt.plot(t, mag_decay1)
-plt.plot(t, mag_decay2)
-plt.plot(t, mag_decay3)
-plt.plot(t, mag_decay4)
+#plt.plot(t, mag_decay2)
+#plt.plot(t, mag_decay3)
+#plt.plot(t, mag_decay4)
 #plt.ylim(-2, 2)
-plt.legend(["site 1", "site 2", "site 3", "site 4"])
+#plt.legend(["site 1", "site 2", "site 3", "site 4"])
 plt.grid()
 plt.title("Magnetization Decay")
 plt.show()
@@ -83,7 +83,7 @@ plt.grid()
 plt.title("Entropy Growth")
 plt.show()
 
-from matplotlib.animation import FuncAnimation
+from matplotlib.animation import FuncAnimation, FFMpegWriter
 
 mag = np.vstack([mag_decay1, mag_decay2, mag_decay3, mag_decay4]).T
 
@@ -106,6 +106,7 @@ def update(frame):
 
 # Animate
 ani = FuncAnimation(fig, update, frames=len(t), interval=50, blit=False)
-
+writer = FFMpegWriter(fps=30, metadata=dict(artist='Me'), bitrate=1800)
+ani.save('my_animation.mp4', writer=writer)
 plt.tight_layout()
-plt.show()
+#plt.show()

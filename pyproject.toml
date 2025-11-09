@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "operator-toolkit"
+version = "0.1.0"
+description = "Library for maneuvering objects in Hilbert Spaces"
+authors = [{name = "Nishith Reen", email = "nishithreen@gmail.com"}]
+requires-python = ">=3.7"
+dependencies = ["numpy", "scipy", "matplotlib"]
+readme = "README.md"
+license = { file = "LICENSE" }
+
+[project.urls]
+Homepage = "https://github.com/nishithreen24/operator-toolkit"
